@@ -167,10 +167,33 @@ Module Module1
                 End Select
             Else
                 value = theCell.CellValue.Text.ToString()
-            End If
 
+                Dim cellWithType As ExcelCellWithType = New ExcelCellWithType()
+
+                If theCell.StyleIndex IsNot Nothing Then
+
+                    Dim CellFormat As CellFormat = CType(wbPart.WorkbookStylesPart.Stylesheet.CellFormats.ChildElements(CInt((theCell.StyleIndex.InnerText))), CellFormat)
+
+                    If CellFormat IsNot Nothing Then
+                        cellWithType.ExcelCellFormat = CellFormat.NumberFormatId
+                        Dim dateFormat As String = GetDateTimeFormat(CellFormat.NumberFormatId)
+                        If dateFormat <> String.Empty Then
+                            cellWithType.IsDateTimeType = True
+
+                            If value <> String.Empty Then
+
+                                If IsNumeric(value) Then
+                                    Dim theDate = DateTime.FromOADate(CDbl(value))
+                                    value = theDate.ToString(dateFormat)
+
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
         End If
-        Return value
+            Return value
     End Function
 
     Private Function InsertSharedStringItem(ByVal text As String, ByVal shareStringPart As SharedStringTablePart) As Integer
@@ -255,5 +278,92 @@ Module Module1
         Loop
         Return name
     End Function
+    Private Function GetDateTimeFormat(numberFormatId As UInt32Value)
+        Return IIf(DateFormatDictionary.ContainsKey(numberFormatId), DateFormatDictionary(numberFormatId), String.Empty)
+
+    End Function
+
+
+
+    Private DateFormatDictionary As New Dictionary(Of UInt32Value, String) From {
+                                                      {14, "yyyy/M/dd"},
+       {15, "d-MMM-yy"},
+       {16, "d-MMM"},
+        {17, "MMM-yy"},
+        {18, "h:mm AM/PM"},
+        {19, "h:mm:ss AM/PM"},
+       {20, "h:mm"},
+       {21, "h:mm:ss"},
+       {22, "M/d/yy h:mm"},
+       {30, "M/d/yy"},
+       {34, "yyyy-MM-dd"},
+       {45, "mm:ss"},
+       {46, "h:mm:ss"},
+       {47, "mmss.0"},
+       {51, "MM-dd"},
+       {52, "yyyy-MM-dd"},
+       {53, "yyyy-MM-dd"},
+       {55, "yyyy-MM-dd"},
+      {56, "yyyy-MM-dd"},
+      {58, "MM-dd"},
+      {165, "M/d/yy"},
+      {166, "dd MMMM yyyy"},
+     {167, "dd/MM/yyyy"},
+       {168, "dd/MM/yy"},
+       {169, "d.M.yy"},
+       {170, "yyyy-MM-dd"},
+       {171, "dd MMMM yyyy"},
+     {172, "d MMMM yyyy"},
+       {173, "M/d"},
+      {174, "M/d/yy"},
+     {175, "MM/dd/yy"},
+     {176, "d-MMM"},
+      {177, "d-MMM-yy"},
+     {178, "dd-MMM-yy"},
+     {179, "MMM-yy"},
+      {180, "MMMM-yy"},
+      {181, "MMMM d}, yyyy"},
+     {182, "M/d/yy hh:mm t"},
+     {183, "M/d/y HH:mm"},
+     {184, "MMM"},
+      {185, "MMM-dd"},
+       {186, "M/d/yyyy"},
+      {187, "d-MMM-yyyy"}
+                                               }
+
 
 End Module
+
+Public Class ExcelCellWithType
+
+    Dim strValue As String = ""
+    Dim iCell As UInt32Value
+    Dim bIsDateTimeType As Boolean
+
+
+    Public Property Value As String
+        Get
+            Return strValue
+        End Get
+        Set(value As String)
+            strValue = value
+        End Set
+    End Property
+    Public Property ExcelCellFormat As UInt32Value
+        Get
+            Return iCell
+        End Get
+        Set(value As UInt32Value)
+            iCell = value
+        End Set
+    End Property
+    Public Property IsDateTimeType As Boolean
+        Get
+            Return bIsDateTimeType
+        End Get
+        Set(value As Boolean)
+            bIsDateTimeType = value
+        End Set
+    End Property
+
+End Class
